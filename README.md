@@ -21,8 +21,3 @@ task-service ---> user-service
   |                  |
   v                  v
 task-db            user-db
-  v
-task-service ---> user-service
-  |                  |
-  v                  v
-task-db            user-db
