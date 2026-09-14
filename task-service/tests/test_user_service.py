@@ -1,8 +1,10 @@
 import httpx
 import pytest
-from fastapi import HTTPException
 
-from app.main import check_user
+from app.clients.user_client import (
+    UserClient,
+    UserServiceTimeoutError,
+)
 
 
 def test_user_service_timeout(monkeypatch):
@@ -11,11 +13,13 @@ def test_user_service_timeout(monkeypatch):
 
     monkeypatch.setattr(httpx, "get", fake_get)
 
-    with pytest.raises(HTTPException) as error:
-        check_user(1, "test-request-id")
+    client = UserClient()
 
-    assert error.value.status_code == 503
-    assert error.value.detail == "User service timeout"
+    with pytest.raises(UserServiceTimeoutError):
+        client.ensure_user_exists(
+            user_id=1,
+            request_id="test-request-id",
+        )
 
 
 def test_request_id_is_sent_to_user_service(monkeypatch):
@@ -30,6 +34,11 @@ def test_request_id_is_sent_to_user_service(monkeypatch):
 
     monkeypatch.setattr(httpx, "get", fake_get)
 
-    check_user(1, "abc-123")
+    client = UserClient()
 
-    assert captured_headers["X-Request-ID"] == "abc-123"
+    client.ensure_user_exists(
+        user_id=1,
+        request_id="abc-123",
+    )
+
+    assert captured_headers["X-Request-ID"] == "abc-123" 
