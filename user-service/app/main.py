@@ -2,15 +2,12 @@ import logging
 import uuid
 from fastapi import Depends, FastAPI, HTTPException, Request
 from sqlalchemy.orm import Session
-
-from .database import Base, engine, get_db
+from .database import get_db
 from .models import User
 from .schemas import UserCreate, UserResponse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("user-service")
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="User Service")
 

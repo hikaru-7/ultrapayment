@@ -1,39 +1,23 @@
 # Task / User services
 
-Учебный проект. Практика.
+Учебный backend-проект для практики.
 
-Два FastAPI сервиса:
-- user-service — пользователи
-- task-service — задачи
+Проект состоит из двух FastAPI-сервисов:
 
-У каждого сервиса своя PostgreSQL база.
-Task-service проверяет пользователя через HTTP запрос в user-service.
+- `user-service` — работа с пользователями
+- `task-service` — работа с задачами
 
-## Запуск
+У каждого сервиса своя PostgreSQL база данных.
 
-```bash
-docker compose up --build
-```
+`task-service` не обращается напрямую к базе пользователей. Для проверки пользователя он отправляет HTTP-запрос в `user-service`.
 
-После запуска:
-- user-service: http://localhost:8001/docs
-- task-service: http://localhost:8000/docs
+## Архитектура
 
-## Пример
-
-1. Создать пользователя через `POST /users`
-2. Создать задачу через `POST /tasks` с `user_id`
-3. Получить задачу через `GET /tasks/{id}`
-
-## Что я здесь изучал
-
-- FastAPI
-- HTTP методы и статусы
-- PostgreSQL
-- SQLAlchemy ORM
-- Docker / Docker Compose
-- HTTPX для общения сервисов
-- обработку connection error / timeout
-- простые логи
-- request id
-- pytest
+```text
+Клиент
+  |
+  v
+task-service ---> user-service
+  |                  |
+  v                  v
+task-db            user-db

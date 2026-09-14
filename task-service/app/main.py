@@ -5,7 +5,7 @@ import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from .database import Base, engine, get_db
+from .database import get_db
 from .models import Task
 from .schemas import TaskCreate, TaskResponse, TaskUpdate
 
@@ -14,7 +14,6 @@ logger = logging.getLogger("task-service")
 
 USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://localhost:8001")
 
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Task Service")
 
