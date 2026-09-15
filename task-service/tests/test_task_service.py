@@ -55,4 +55,4 @@ def test_create_task_checks_user_and_creates_task():
 
     assert user_client.checked_user_id == 5
     assert result["title"] == "Learn architecture"
-    assert result["user_id"] == 5  
+    assert result["user_id"] == 5

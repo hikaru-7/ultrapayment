@@ -4,7 +4,6 @@ import httpx
 
 from ..config import USER_SERVICE_TIMEOUT, USER_SERVICE_URL
 
-
 logger = logging.getLogger("task-service")
 
 

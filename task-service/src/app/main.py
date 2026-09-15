@@ -5,7 +5,6 @@ from fastapi import FastAPI, Request
 
 from .api.tasks import router as tasks_router
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("task-service")
 
@@ -42,4 +41,4 @@ def health():
     return {"status": "ok"}
 
 
-app.include_router(tasks_router) 
+app.include_router(tasks_router)

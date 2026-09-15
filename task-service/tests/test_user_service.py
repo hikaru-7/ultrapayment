@@ -1,10 +1,6 @@
 import httpx
 import pytest
-
-from app.clients.user_client import (
-    UserClient,
-    UserServiceTimeoutError,
-)
+from app.clients.user_client import UserClient, UserServiceTimeoutError
 
 
 def test_user_service_timeout(monkeypatch):
@@ -41,4 +37,4 @@ def test_request_id_is_sent_to_user_service(monkeypatch):
         request_id="abc-123",
     )
 
-    assert captured_headers["X-Request-ID"] == "abc-123" 
+    assert captured_headers["X-Request-ID"] == "abc-123"

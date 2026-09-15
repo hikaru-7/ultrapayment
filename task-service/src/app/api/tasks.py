@@ -1,25 +1,26 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
 from ..clients.user_client import (
     UnexpectedUserServiceResponseError,
+    UserClient,
     UserNotFoundError,
     UserServiceError,
     UserServiceTimeoutError,
     UserServiceUnavailableError,
-    UserClient,
 )
 from ..db.database import get_db
 from ..repositories.task_repository import TaskRepository
 from ..schemas.task import TaskCreate, TaskResponse, TaskUpdate
 from ..services.task_service import TaskNotFoundError, TaskService
 
-
 router = APIRouter()
 
 
 def get_task_service(
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> TaskService:
     repository = TaskRepository(db)
     user_client = UserClient()
@@ -30,6 +31,12 @@ def get_task_service(
     )
 
 
+TaskServiceDep = Annotated[
+    TaskService,
+    Depends(get_task_service),
+]
+
+
 @router.post(
     "/tasks",
     response_model=TaskResponse,
@@ -38,7 +45,7 @@ def get_task_service(
 def create_task(
     data: TaskCreate,
     request: Request,
-    service: TaskService = Depends(get_task_service),
+    service: TaskServiceDep,
 ):
     try:
         return service.create_task(
@@ -77,7 +84,7 @@ def create_task(
     response_model=list[TaskResponse],
 )
 def list_tasks(
-    service: TaskService = Depends(get_task_service),
+    service: TaskServiceDep,
 ):
     return service.list_tasks()
 
@@ -88,7 +95,7 @@ def list_tasks(
 )
 def get_task(
     task_id: int,
-    service: TaskService = Depends(get_task_service),
+    service: TaskServiceDep,
 ):
     try:
         return service.get_task(task_id)
@@ -106,7 +113,7 @@ def get_task(
 def update_task(
     task_id: int,
     data: TaskUpdate,
-    service: TaskService = Depends(get_task_service),
+    service: TaskServiceDep,
 ):
     try:
         return service.update_task(
@@ -126,7 +133,7 @@ def update_task(
 )
 def delete_task(
     task_id: int,
-    service: TaskService = Depends(get_task_service),
+    service: TaskServiceDep,
 ):
     try:
         service.delete_task(task_id)
@@ -136,4 +143,4 @@ def delete_task(
             detail="Task not found",
         )
 
-    return Response(status_code=204) 
+    return Response(status_code=204)
