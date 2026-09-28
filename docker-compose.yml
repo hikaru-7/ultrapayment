@@ -27,6 +27,20 @@ services:
       timeout: 5s
       retries: 5
 
+  payment-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: payments
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - payment_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d payments"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   user-service:
     build: ./user-service
     environment:
@@ -50,6 +64,17 @@ services:
       user-service:
         condition: service_started
 
+  payment-service:
+    build: ./payment-service
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@payment-db:5432/payments
+    ports:
+      - "8002:8002"
+    depends_on:
+      payment-db:
+        condition: service_healthy
+
 volumes:
   user_db_data:
   task_db_data:
+  payment_db_data:
