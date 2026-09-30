@@ -1,0 +1,129 @@
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from sqlalchemy.orm import Session
+
+from ..clients.user_client import UserClient
+from ..db.database import get_db
+from ..repositories.task_repository import TaskRepository
+from ..schemas.task import TaskCreate, TaskResponse, TaskUpdate
+from ..services.task_service import (
+    TaskDependencyError,
+    TaskNotFoundError,
+    TaskService,
+    TaskUserNotFoundError,
+)
+
+router = APIRouter()
+
+
+def get_task_service(
+    db: Annotated[Session, Depends(get_db)],
+) -> TaskService:
+    repository = TaskRepository(db)
+    user_client = UserClient()
+
+    return TaskService(
+        repository=repository,
+        user_client=user_client,
+    )
+
+
+TaskServiceDep = Annotated[
+    TaskService,
+    Depends(get_task_service),
+]
+
+
+@router.post(
+    "/tasks",
+    response_model=TaskResponse,
+    status_code=201,
+)
+def create_task(
+    data: TaskCreate,
+    request: Request,
+    service: TaskServiceDep,
+):
+    try:
+        return service.create_task(
+            data=data,
+            request_id=request.state.request_id,
+        )
+    except TaskUserNotFoundError:
+        raise HTTPException(
+            status_code=400,
+            detail="User does not exist",
+        )
+    except TaskDependencyError:
+        raise HTTPException(
+            status_code=503,
+            detail="Required service unavailable",
+        )
+
+
+@router.get(
+    "/tasks",
+    response_model=list[TaskResponse],
+)
+def list_tasks(
+    service: TaskServiceDep,
+):
+    return service.list_tasks()
+
+
+@router.get(
+    "/tasks/{task_id}",
+    response_model=TaskResponse,
+)
+def get_task(
+    task_id: int,
+    service: TaskServiceDep,
+):
+    try:
+        return service.get_task(task_id)
+    except TaskNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found",
+        )
+
+
+@router.patch(
+    "/tasks/{task_id}",
+    response_model=TaskResponse,
+)
+def update_task(
+    task_id: int,
+    data: TaskUpdate,
+    service: TaskServiceDep,
+):
+    try:
+        return service.update_task(
+            task_id=task_id,
+            data=data,
+        )
+    except TaskNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found",
+        )
+
+
+@router.delete(
+    "/tasks/{task_id}",
+    status_code=204,
+)
+def delete_task(
+    task_id: int,
+    service: TaskServiceDep,
+):
+    try:
+        service.delete_task(task_id)
+    except TaskNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found",
+        )
+
+    return Response(status_code=204)
