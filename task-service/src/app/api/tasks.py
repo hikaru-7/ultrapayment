@@ -3,18 +3,16 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
-from ..clients.user_client import (
-    UnexpectedUserServiceResponseError,
-    UserClient,
-    UserNotFoundError,
-    UserServiceError,
-    UserServiceTimeoutError,
-    UserServiceUnavailableError,
-)
+from ..clients.user_client import UserClient
 from ..db.database import get_db
 from ..repositories.task_repository import TaskRepository
 from ..schemas.task import TaskCreate, TaskResponse, TaskUpdate
-from ..services.task_service import TaskNotFoundError, TaskService
+from ..services.task_service import (
+    TaskDependencyError,
+    TaskNotFoundError,
+    TaskService,
+    TaskUserNotFoundError,
+)
 
 router = APIRouter()
 
@@ -52,30 +50,15 @@ def create_task(
             data=data,
             request_id=request.state.request_id,
         )
-    except UserNotFoundError:
+    except TaskUserNotFoundError:
         raise HTTPException(
             status_code=400,
             detail="User does not exist",
         )
-    except UserServiceTimeoutError:
+    except TaskDependencyError:
         raise HTTPException(
             status_code=503,
-            detail="User service timeout",
-        )
-    except UserServiceUnavailableError:
-        raise HTTPException(
-            status_code=503,
-            detail="User service unavailable",
-        )
-    except UserServiceError:
-        raise HTTPException(
-            status_code=503,
-            detail="User service error",
-        )
-    except UnexpectedUserServiceResponseError:
-        raise HTTPException(
-            status_code=502,
-            detail="Unexpected response from user service",
+            detail="Required service unavailable",
         )
 
 

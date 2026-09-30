@@ -5,6 +5,8 @@ services:
       POSTGRES_DB: users
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
     volumes:
       - user_db_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,6 +21,8 @@ services:
       POSTGRES_DB: tasks
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
     volumes:
       - task_db_data:/var/lib/postgresql/data
     healthcheck:

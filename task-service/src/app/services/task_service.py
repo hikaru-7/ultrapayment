@@ -1,10 +1,25 @@
-from ..clients.user_client import UserClient
+from ..clients.user_client import (
+    UnexpectedUserServiceResponseError,
+    UserClient,
+    UserNotFoundError,
+    UserServiceError,
+    UserServiceTimeoutError,
+    UserServiceUnavailableError,
+)
 from ..models.task import Task
 from ..repositories.task_repository import TaskRepository
 from ..schemas.task import TaskCreate, TaskUpdate
 
 
 class TaskNotFoundError(Exception):
+    pass
+
+
+class TaskUserNotFoundError(Exception):
+    pass
+
+
+class TaskDependencyError(Exception):
     pass
 
 
@@ -22,10 +37,20 @@ class TaskService:
         data: TaskCreate,
         request_id: str,
     ) -> Task:
-        self.user_client.ensure_user_exists(
-            user_id=data.user_id,
-            request_id=request_id,
-        )
+        try:
+            self.user_client.ensure_user_exists(
+                user_id=data.user_id,
+                request_id=request_id,
+            )
+        except UserNotFoundError as exc:
+            raise TaskUserNotFoundError() from exc
+        except (
+            UserServiceTimeoutError,
+            UserServiceUnavailableError,
+            UserServiceError,
+            UnexpectedUserServiceResponseError,
+        ) as exc:
+            raise TaskDependencyError() from exc
 
         return self.repository.create(
             title=data.title,
