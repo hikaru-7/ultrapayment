@@ -1,6 +1,7 @@
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy import DateTime, Integer, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db.database import Base
@@ -19,8 +20,8 @@ class Payment(Base):
         nullable=False,
     )
 
-    amount: Mapped[int] = mapped_column(
-        Integer,
+    amount: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2),
         nullable=False,
     )
 
