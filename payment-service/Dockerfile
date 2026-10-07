@@ -4,6 +4,10 @@ WORKDIR /app
 
 COPY requirements.txt .
 COPY src ./src
+COPY tests ./tests
+
+RUN find src tests -type f -name "*.py" -exec chmod a-x {} +
+
 COPY alembic.ini .
 COPY alembic ./alembic
 
