@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 class PaymentCreate(BaseModel):
     merchant_id: str
     amount: Decimal = Field(ge=0)
-    currency: str
+    currency: str = Field(min_length=3, max_length=3)
 
 
 class PaymentResponse(BaseModel):
