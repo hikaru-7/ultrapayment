@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from ..models.payment import Payment
+from ..models.payment import Payment, PaymentAttempt
 
 
 class PaymentRepository:
@@ -22,15 +22,47 @@ class PaymentRepository:
         )
 
         self.db.add(payment)
-        self.db.commit()
-        self.db.refresh(payment)
+        self.db.flush()
 
         return payment
+
+    def create_attempt(
+        self,
+        payment_id: int,
+    ) -> PaymentAttempt:
+        attempt = PaymentAttempt(
+            payment_id=payment_id,
+        )
+
+        self.db.add(attempt)
+        self.db.flush()
+
+        return attempt
+
+    def commit(self) -> None:
+        self.db.commit()
+
+    def rollback(self) -> None:
+        self.db.rollback()
+
+    def refresh(self, payment: Payment) -> None:
+        self.db.refresh(payment)
 
     def get_by_id(self, payment_id: int) -> Payment | None:
         return (
             self.db.query(Payment)
             .filter(Payment.id == payment_id)
+            .first()
+        )
+
+    def get_by_id_for_update(
+        self,
+        payment_id: int,
+    ) -> Payment | None:
+        return (
+            self.db.query(Payment)
+            .filter(Payment.id == payment_id)
+            .with_for_update()
             .first()
         )
 

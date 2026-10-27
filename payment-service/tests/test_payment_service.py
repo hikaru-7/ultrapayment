@@ -1,11 +1,26 @@
 from decimal import Decimal
 
 import pytest
+
 from app.schemas.payment import PaymentCreate
 from app.services.payment_service import (
     PaymentNotFoundError,
     PaymentService,
 )
+
+
+class FakePayment:
+    def __init__(
+        self,
+        payment_id,
+        merchant_id,
+        amount,
+        currency,
+    ):
+        self.id = payment_id
+        self.merchant_id = merchant_id
+        self.amount = amount
+        self.currency = currency
 
 
 class FakePaymentRepository:
@@ -14,19 +29,36 @@ class FakePaymentRepository:
         self.payment_to_return = None
         self.all_payments = []
 
+        self.attempt_created = False
+        self.committed = False
+        self.rolled_back = False
+
     def create(
         self,
         merchant_id: str,
         amount: Decimal,
         currency: str,
     ):
-        self.created_payment = {
-            "merchant_id": merchant_id,
-            "amount": amount,
-            "currency": currency,
-        }
+        self.created_payment = FakePayment(
+            payment_id=1,
+            merchant_id=merchant_id,
+            amount=amount,
+            currency=currency,
+        )
 
         return self.created_payment
+
+    def create_attempt(self, payment_id: int):
+        self.attempt_created = True
+
+    def commit(self):
+        self.committed = True
+
+    def rollback(self):
+        self.rolled_back = True
+
+    def refresh(self, payment):
+        pass
 
     def get_by_id(self, payment_id: int):
         return self.payment_to_return
@@ -51,9 +83,13 @@ def test_create_payment():
 
     result = service.create_payment(data)
 
-    assert result["merchant_id"] == "merchant-1"
-    assert result["amount"] == Decimal("10.50")
-    assert result["currency"] == "EUR"
+    assert result.merchant_id == "merchant-1"
+    assert result.amount == Decimal("10.50")
+    assert result.currency == "EUR"
+
+    assert repository.attempt_created is True
+    assert repository.committed is True
+    assert repository.rolled_back is False
 
 
 def test_get_payment():

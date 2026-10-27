@@ -11,11 +11,25 @@ class PaymentService:
         self.repository = repository
 
     def create_payment(self, data: PaymentCreate):
-        return self.repository.create(
-            merchant_id=data.merchant_id,
-            amount=data.amount,
-            currency=data.currency,
-        )
+        try:
+            payment = self.repository.create(
+                merchant_id=data.merchant_id,
+                amount=data.amount,
+                currency=data.currency,
+            )
+
+            self.repository.create_attempt(
+                payment_id=payment.id,
+            )
+
+            self.repository.commit()
+            self.repository.refresh(payment)
+
+            return payment
+
+        except Exception:
+            self.repository.rollback()
+            raise
 
     def get_payment(self, payment_id: int):
         payment = self.repository.get_by_id(payment_id)
