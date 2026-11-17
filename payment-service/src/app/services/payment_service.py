@@ -1,5 +1,6 @@
 from ..repositories.payment_repository import PaymentRepository
 from ..schemas.payment import PaymentCreate
+from .payment_state_machine import PaymentStateMachine
 
 
 class PaymentNotFoundError(Exception):
@@ -48,3 +49,33 @@ class PaymentService:
             limit=limit,
             offset=offset,
         )
+
+    def process_payment(self, payment_id: int):
+        payment = self.get_payment(payment_id)
+
+        PaymentStateMachine.process(payment)
+
+        self.repository.commit()
+        self.repository.refresh(payment)
+
+        return payment
+
+    def succeed_payment(self, payment_id: int):
+        payment = self.get_payment(payment_id)
+
+        PaymentStateMachine.succeed(payment)
+
+        self.repository.commit()
+        self.repository.refresh(payment)
+
+        return payment
+
+    def fail_payment(self, payment_id: int):
+        payment = self.get_payment(payment_id)
+
+        PaymentStateMachine.fail(payment)
+
+        self.repository.commit()
+        self.repository.refresh(payment)
+
+        return payment
