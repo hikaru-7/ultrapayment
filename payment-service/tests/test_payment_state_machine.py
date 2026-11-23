@@ -6,6 +6,7 @@ from app.models.payment import Payment
 from app.services.payment_state_machine import (
     InvalidPaymentTransitionError,
     PaymentStateMachine,
+    PaymentStatus,
 )
 
 
@@ -42,15 +43,6 @@ def test_processing_can_fail():
     assert payment.status == "failed"
 
 
-def test_created_cannot_succeed_directly():
-    payment = create_payment("created")
-
-    with pytest.raises(InvalidPaymentTransitionError):
-        PaymentStateMachine.succeed(payment)
-
-    assert payment.status == "created"
-
-
 def test_succeeded_cannot_be_processed_again():
     payment = create_payment("succeeded")
 
@@ -60,10 +52,33 @@ def test_succeeded_cannot_be_processed_again():
     assert payment.status == "succeeded"
 
 
-def test_failed_cannot_succeed():
-    payment = create_payment("failed")
+@pytest.mark.parametrize(
+    ("current_status", "new_status"),
+    [
+        (PaymentStatus.CREATED, PaymentStatus.CREATED),
+        (PaymentStatus.CREATED, PaymentStatus.SUCCEEDED),
+        (PaymentStatus.CREATED, PaymentStatus.FAILED),
+        (PaymentStatus.PROCESSING, PaymentStatus.CREATED),
+        (PaymentStatus.PROCESSING, PaymentStatus.PROCESSING),
+        (PaymentStatus.SUCCEEDED, PaymentStatus.CREATED),
+        (PaymentStatus.SUCCEEDED, PaymentStatus.SUCCEEDED),
+        (PaymentStatus.SUCCEEDED, PaymentStatus.FAILED),
+        (PaymentStatus.FAILED, PaymentStatus.CREATED),
+        (PaymentStatus.FAILED, PaymentStatus.PROCESSING),
+        (PaymentStatus.FAILED, PaymentStatus.SUCCEEDED),
+        (PaymentStatus.FAILED, PaymentStatus.FAILED),
+    ],
+)
+def test_forbidden_transitions(
+    current_status: PaymentStatus,
+    new_status: PaymentStatus,
+):
+    payment = create_payment(current_status.value)
 
     with pytest.raises(InvalidPaymentTransitionError):
-        PaymentStateMachine.succeed(payment)
+        PaymentStateMachine.transition(
+            payment,
+            new_status,
+        )
 
-    assert payment.status == "failed"
+    assert payment.status == current_status.value

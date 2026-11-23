@@ -7,6 +7,7 @@ from ..db.database import get_db
 from ..repositories.payment_repository import PaymentRepository
 from ..schemas.payment import PaymentCreate, PaymentResponse
 from ..services.payment_service import PaymentNotFoundError, PaymentService
+from ..services.payment_state_machine import InvalidPaymentTransitionError
 
 router = APIRouter(
     prefix="/payments",
@@ -60,3 +61,60 @@ def get_payments(
         limit=limit,
         offset=offset,
     )
+
+
+@router.post("/{payment_id}/process", response_model=PaymentResponse)
+def process_payment(
+    payment_id: int,
+    service: PaymentServiceDep,
+):
+    try:
+        return service.process_payment(payment_id)
+    except PaymentNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail="Payment not found",
+        ) from exc
+    except InvalidPaymentTransitionError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+
+@router.post("/{payment_id}/succeed", response_model=PaymentResponse)
+def succeed_payment(
+    payment_id: int,
+    service: PaymentServiceDep,
+):
+    try:
+        return service.succeed_payment(payment_id)
+    except PaymentNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail="Payment not found",
+        ) from exc
+    except InvalidPaymentTransitionError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+
+@router.post("/{payment_id}/fail", response_model=PaymentResponse)
+def fail_payment(
+    payment_id: int,
+    service: PaymentServiceDep,
+):
+    try:
+        return service.fail_payment(payment_id)
+    except PaymentNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail="Payment not found",
+        ) from exc
+    except InvalidPaymentTransitionError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc

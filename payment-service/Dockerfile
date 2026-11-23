@@ -3,6 +3,7 @@ FROM python:3.13-slim
 WORKDIR /app
 
 COPY requirements.txt .
+COPY pytest.ini .
 COPY src ./src
 COPY tests ./tests
 
