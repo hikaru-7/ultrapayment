@@ -1,6 +1,6 @@
 from ..repositories.payment_repository import PaymentRepository
 from ..schemas.payment import PaymentCreate
-from .payment_state_machine import PaymentStateMachine
+from .payment_state_machine import PaymentStateMachine, PaymentStatus
 
 
 class PaymentNotFoundError(Exception):
@@ -50,32 +50,47 @@ class PaymentService:
             offset=offset,
         )
 
+    def _change_status(
+        self,
+        payment_id: int,
+        new_status: PaymentStatus,
+    ):
+        try:
+            payment = self.repository.get_by_id_for_update(
+                payment_id,
+            )
+
+            if payment is None:
+                raise PaymentNotFoundError()
+
+            PaymentStateMachine.transition(
+                payment,
+                new_status,
+            )
+
+            self.repository.commit()
+            self.repository.refresh(payment)
+
+            return payment
+
+        except Exception:
+            self.repository.rollback()
+            raise
+
     def process_payment(self, payment_id: int):
-        payment = self.get_payment(payment_id)
-
-        PaymentStateMachine.process(payment)
-
-        self.repository.commit()
-        self.repository.refresh(payment)
-
-        return payment
+        return self._change_status(
+            payment_id,
+            PaymentStatus.PROCESSING,
+        )
 
     def succeed_payment(self, payment_id: int):
-        payment = self.get_payment(payment_id)
-
-        PaymentStateMachine.succeed(payment)
-
-        self.repository.commit()
-        self.repository.refresh(payment)
-
-        return payment
+        return self._change_status(
+            payment_id,
+            PaymentStatus.SUCCEEDED,
+        )
 
     def fail_payment(self, payment_id: int):
-        payment = self.get_payment(payment_id)
-
-        PaymentStateMachine.fail(payment)
-
-        self.repository.commit()
-        self.repository.refresh(payment)
-
-        return payment
+        return self._change_status(
+            payment_id,
+            PaymentStatus.FAILED,
+        )
